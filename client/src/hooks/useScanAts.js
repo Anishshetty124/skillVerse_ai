@@ -1,23 +1,37 @@
 import { useState } from 'react';
+import { api } from '../services/api';
+import useStore from '../store/useStore';
 
-const useScanAts = () => {
-  const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(false);
+export const useScanAts = () => {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const setAtsData = useStore((state) => state.setAtsData);
 
-  const scanAts = async (resume) => {
-    setLoading(true);
-    try {
-      // API call to scan ATS
-      // const response = await api.scanAts(resume);
-      // setResult(response.data);
-    } catch (error) {
-      console.error('Error scanning ATS:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    const scan = async (file, jobDescription) => {
+        if (!file || !jobDescription) {
+            setError("Please provide both a Resume (PDF) and Job Description.");
+            return;
+        }
 
-  return { result, loading, scanAts };
+        setLoading(true);
+        setError(null);
+
+        const formData = new FormData();
+        formData.append('resume', file);
+        formData.append('jobDescription', jobDescription);
+
+        try {
+            const res = await api.scanAts(formData);
+            if (res.data.success) {
+                setAtsData(res.data.data);
+            }
+        } catch (err) {
+            const msg = err.response?.data?.error?.message || "ATS Analysis failed.";
+            setError(msg);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return { scan, loading, error };
 };
-
-export default useScanAts;
