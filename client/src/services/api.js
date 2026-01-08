@@ -1,72 +1,46 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+/**
+ * @file api.js
+ * @description Centralized Axios Service.
+ * Handles all HTTP communication with the Backend.
+ */
 
-class ApiService {
-  async request(endpoint, options = {}) {
-    const url = `${API_BASE_URL}${endpoint}`;
-    const config = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-      ...options,
-    };
+import axios from 'axios';
 
-    try {
-      const response = await fetch(url, config);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      return await response.json();
-    } catch (error) {
-      console.error('API request failed:', error);
-      throw error;
-    }
-  }
+// Configuration
+// Use relative URL to leverage Vite proxy in development
+// In Production, this would be an environment variable (import.meta.env.VITE_API_URL)
+const API_BASE_URL = '/api';
 
-  // ATS scanning
-  async scanAts(resumeData) {
-    return this.request('/ats/scan', {
-      method: 'POST',
-      body: JSON.stringify(resumeData),
-    });
-  }
+// Create Axios Instance with Defaults
+const apiClient = axios.create({
+    baseURL: API_BASE_URL,
+    timeout: 30000, // 30s timeout for AI operations
+});
 
-  // GitHub scanning
-  async scanGithub(username) {
-    return this.request(`/github/scan/${username}`);
-  }
+export const api = {
+    /**
+     * GitHub Intelligence
+     * @param {string} username 
+     */
+    scanGithub: (username) => apiClient.post('/github', { username }),
 
-  // LinkedIn scanning
-  async scanLinkedin(profileUrl) {
-    return this.request('/linkedin/scan', {
-      method: 'POST',
-      body: JSON.stringify({ profileUrl }),
-    });
-  }
+    /**
+     * ATS Resume Audit
+     * Note: We don't manually set Content-Type here; Axios sets it automatically for FormData
+     * @param {FormData} formData - Keys: 'resume', 'jobDescription'
+     */
+    scanAts: (formData) => apiClient.post('/ats', formData),
 
-  // Roadmap generation
-  async generateRoadmap(data) {
-    return this.request('/roadmap/generate', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
+    /**
+     * LinkedIn Vision Analysis
+     * @param {FormData} formData - Keys: 'screenshot'
+     */
+    analyzeLinkedin: (formData) => apiClient.post('/linkedin', formData),
 
-  // Resume operations
-  async auditResume(resumeData) {
-    return this.request('/resume/audit', {
-      method: 'POST',
-      body: JSON.stringify(resumeData),
-    });
-  }
-
-  async tailorResume(resumeData, jobDescription) {
-    return this.request('/resume/tailor', {
-      method: 'POST',
-      body: JSON.stringify({ resumeData, jobDescription }),
-    });
-  }
-}
-
-const api = new ApiService();
-export default api;
+    /**
+     * Career Roadmap Generation
+     * @param {string} skill - e.g. "Docker"
+     * @param {string} currentLevel - e.g. "Beginner"
+     */
+    generateRoadmap: (skill, currentLevel = 'Beginner') => apiClient.post('/roadmap', { skill, currentLevel }),
+};
