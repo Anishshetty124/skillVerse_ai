@@ -1,12 +1,150 @@
-import React from 'react';
+import { useState, useEffect } from 'react';
+import { useScanLinkedin } from '../../../hooks/useScanLinkedin';
+import useStore from '../../../store/useStore';
+import { GlassCard } from '../../ui/GlassCard';
+import { GradientButton } from '../../ui/GradientButton';
+import { Linkedin, Camera, Upload, CheckCircle, AlertCircle, Sparkles } from 'lucide-react';
 
 const LinkedinScanner = () => {
-  return (
-    <div className="linkedin-scanner">
-      <h3>LinkedIn Scanner</h3>
-      {/* LinkedIn profile scanning functionality */}
-    </div>
-  );
+    // 1. Setup State
+    const [file, setFile] = useState(null);
+    const [preview, setPreview] = useState(null);
+    const { analyze, loading, error } = useScanLinkedin();
+    const linkedinData = useStore((state) => state.linkedinData);
+
+    // Handle File Selection & Preview Generation
+    const handleFileChange = (e) => {
+        const selected = e.target.files[0];
+        if (selected) {
+            setFile(selected);
+            setPreview(URL.createObjectURL(selected));
+        }
+    };
+
+    const handleAnalyze = () => {
+        if (file) analyze(file);
+    };
+
+    // Cleanup preview URL on unmount to prevent memory leaks
+    useEffect(() => {
+        return () => {
+            if (preview) URL.revokeObjectURL(preview);
+        };
+    }, [preview]);
+
+    return (
+        <div className="grid lg:grid-cols-2 gap-6 sm:gap-8 animate-fade-in-up">
+            
+            {/* --- LEFT: UPLOAD & PREVIEW --- */}
+            <div className="space-y-4 sm:space-y-6">
+                <GlassCard className="relative overflow-hidden group p-4 sm:p-6">
+                    <div className="absolute top-0 left-0 bg-[#0077b5] p-2 sm:p-3 rounded-br-2xl z-20">
+                        <Linkedin className="text-white w-5 h-5 sm:w-6 sm:h-6" />
+                    </div>
+
+                    {/* Upload Logic */}
+                    <div className="relative min-h-[250px] sm:min-h-[300px] flex flex-col items-center justify-center border-2 border-dashed border-white/20 rounded-xl bg-black/20 hover:bg-black/30 transition-colors">
+                        
+                        {preview ? (
+                            <img 
+                                src={preview} 
+                                alt="Profile Preview" 
+                                className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:opacity-30 transition-opacity"
+                            />
+                        ) : (
+                            <div className="text-center p-4 sm:p-6">
+                                <div className="bg-white/10 p-3 sm:p-4 rounded-full inline-block mb-3 sm:mb-4">
+                                    <Camera size={28} className="text-indigo-300 sm:w-8 sm:h-8" />
+                                </div>
+                                <h3 className="text-white font-bold text-sm sm:text-base">Upload Profile Screenshot</h3>
+                                <p className="text-xs sm:text-sm text-gray-400 mt-2">Include Banner & Headline</p>
+                            </div>
+                        )}
+
+                        {/* Hidden Input */}
+                        <input 
+                            type="file" 
+                            accept="image/*"
+                            onChange={handleFileChange}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-30"
+                        />
+                    </div>
+                </GlassCard>
+
+                <GradientButton 
+                    onClick={handleAnalyze} 
+                    loading={loading} 
+                    disabled={!file} 
+                    className="w-full text-sm sm:text-base py-3"
+                >
+                    ANALYZE VISUAL BRAND
+                </GradientButton>
+
+                {error && (
+                    <div className="p-3 sm:p-4 bg-red-900/30 border border-red-500/30 rounded-xl text-red-200 text-xs sm:text-sm flex gap-2">
+                        <AlertCircle size={14} className="shrink-0 mt-0.5 sm:w-4 sm:h-4" /> {error}
+                    </div>
+                )}
+            </div>
+
+            {/* --- RIGHT: AI ANALYSIS --- */}
+            <div className="space-y-4 sm:space-y-6">
+                {linkedinData ? (
+                    <>
+                        {/* Score Card */}
+                        <GlassCard delay={0.1} className="flex flex-col sm:flex-row items-center justify-between border-l-4 border-[#0077b5] gap-3 sm:gap-0 p-4 sm:p-6">
+                            <div className="text-center sm:text-left">
+                                <h3 className="text-[10px] sm:text-xs font-bold text-[#0077b5] uppercase tracking-widest">First Impression Score</h3>
+                                <p className="text-gray-400 text-[10px] sm:text-xs">Based on visual hierarchy & clarity</p>
+                            </div>
+                            <div className="text-4xl sm:text-5xl font-black text-white">
+                                {linkedinData.visual_score}<span className="text-base sm:text-lg text-gray-500 font-normal">/100</span>
+                            </div>
+                        </GlassCard>
+
+                        {/* Critique */}
+                        <GlassCard delay={0.2} className="bg-red-900/10 border-red-500/20 p-4 sm:p-6">
+                            <h4 className="flex items-center gap-2 text-red-300 font-bold mb-2 text-xs sm:text-sm uppercase">
+                                <AlertCircle size={14} className="sm:w-4 sm:h-4"/> Critical Issues
+                            </h4>
+                            <p className="text-gray-300 text-xs sm:text-sm leading-relaxed">
+                                "{linkedinData.critique}"
+                            </p>
+                        </GlassCard>
+
+                        {/* Headline Fix */}
+                        <GlassCard delay={0.3} className="bg-emerald-900/10 border-emerald-500/20 p-4 sm:p-6">
+                            <h4 className="flex items-center gap-2 text-emerald-300 font-bold mb-2 text-xs sm:text-sm uppercase">
+                                <Sparkles size={14} className="sm:w-4 sm:h-4"/> AI Headline Rewrite
+                            </h4>
+                            <div className="bg-black/30 p-2.5 sm:p-3 rounded-lg border border-white/5 font-mono text-xs sm:text-sm text-emerald-100">
+                                {linkedinData.headline_suggestion}
+                            </div>
+                        </GlassCard>
+
+                        {/* Action Items */}
+                        <GlassCard delay={0.4} className="p-4 sm:p-6">
+                            <h4 className="font-bold text-white mb-3 text-xs sm:text-sm uppercase tracking-wider">Optimization Checklist</h4>
+                            <ul className="space-y-1.5 sm:space-y-2">
+                                {linkedinData.action_items?.map((item, idx) => (
+                                    <li key={idx} className="flex items-start gap-2 text-xs sm:text-sm text-gray-400">
+                                        <CheckCircle size={12} className="mt-1 text-[#0077b5] sm:w-3.5 sm:h-3.5 shrink-0" />
+                                        {item}
+                                    </li>
+                                ))}
+                            </ul>
+                        </GlassCard>
+                    </>
+                ) : (
+                    // Empty State
+                    <div className="h-full min-h-[300px] sm:min-h-[400px] flex flex-col items-center justify-center opacity-30 border-2 border-dashed border-white/10 rounded-3xl bg-white/5">
+                        <Upload size={40} className="text-white mb-3 sm:mb-4 sm:w-12 sm:h-12" />
+                        <p className="text-white font-light text-sm sm:text-base">Results will appear here</p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
 };
 
 export default LinkedinScanner;
