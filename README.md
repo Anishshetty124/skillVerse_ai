@@ -255,25 +255,22 @@ npm install
 Create `.env` file in `server/` directory:
 
 ```env
-# Server Configuration
 PORT=5000
+
 NODE_ENV=development
 
-# Database
-MONGO_URI=mongodb://localhost:27017/skillverse
-# OR for MongoDB Atlas:
-# MONGO_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/skillverse
+GEMINI_API_KEY=AIzaSyDL6I6vMnqfD6agky-RkbXdA3trcIeHU2o,AIzaSyBWTPG4euuUhuUoHs_Pi3LPKQhHUdcVKEk,AIzaSyDuNDwa4ts48gfUeE3BnIe5iHGg1oX6oBE,AIzaSyB_Vf-_YrZTptSnSu8eM5MCA5EyoTKTH20,AIzaSyAKJqhFwokv69T8si3I1QNriC51L0KvBTo
 
-# Authentication
-JWT_SECRET=your_super_secure_random_string_here_min_32_chars
+GITHUB_TOKEN=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
+
+MONGO_URI=mongodb+srv://anishshetty124:Anish2puc@cluster0.lpaf4id.mongodb.net/skill_project?retryWrites=true&w=majority&appName=Cluster0
+
+# Auth
+JWT_SECRET=ashwinbhai
 JWT_EXPIRES_IN=7d
-GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
+GOOGLE_CLIENT_ID=109106026507-71a4v63v30r1ecl1qso8c4ela59l1tc6.apps.googleusercontent.com
 
-# AI APIs (Get from https://aistudio.google.com/)
-GEMINI_API_KEY=your_gemini_key_1,your_gemini_key_2,your_gemini_key_3
-
-# Optional: GitHub Token for rate limit bypass
-GITHUB_TOKEN=your_github_personal_access_token
+YOUTUBE_API_KEY=AIzaSyCbR8ntfpwWfzpldgrd_VnNzpw8tMAY_Pw
 ```
 
 **Start Backend:**
@@ -309,9 +306,10 @@ VITE_API_URL=/api
   - `GITHUB_TOKEN` (optional): Increases GitHub API rate limits
 
 - Client `.env`:
-  - `VITE_GOOGLE_CLIENT_ID`: Same OAuth Client ID used by server
-  - `VITE_API_URL`: Base API path (use `/api` when proxying via dev server)
+ VITE_GOOGLE_CLIENT_ID=109106026507-71a4v63v30r1ecl1qso8c4ela59l1tc6.apps.googleusercontent.com
 
+# Point this to your backend server
+VITE_API_URL=http://localhost:5000/api
 ### ▶️ Run Instructions
 
 1) Start backend:
