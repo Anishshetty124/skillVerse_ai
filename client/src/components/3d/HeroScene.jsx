@@ -9,7 +9,8 @@ const NeuralNetwork = (props) => {
   // Generate 5000 points in a sphere
   const [sphere] = useState(() => {
     try {
-      const positions = random.inSphere(new Float32Array(5000), { radius: 1.5 });
+      // Need length divisible by stride (3) to avoid computeBoundingSphere NaN
+      const positions = random.inSphere(new Float32Array(5000 * 3), { radius: 1.5 });
       // Validate positions to prevent NaN
       for (let i = 0; i < positions.length; i++) {
         if (!isFinite(positions[i])) positions[i] = 0;
@@ -17,7 +18,7 @@ const NeuralNetwork = (props) => {
       return positions;
     } catch (e) {
       console.warn('Failed to generate sphere positions:', e);
-      return new Float32Array(5000);
+      return new Float32Array(5000 * 3);
     }
   });
 

@@ -147,7 +147,7 @@ demo/
 #### 1. Clone Repository
 ```bash
 git clone <url>
-cd skillVerse_ai
+cd SkillVerse_AI
 ```
 
 #### 2. Backend Setup

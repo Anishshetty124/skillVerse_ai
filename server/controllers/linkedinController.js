@@ -41,34 +41,50 @@ export const analyzeLinkedin = async (req, res) => {
             displayName: `User Upload ${Date.now()}`,
         });
 
-        // 4. Generate Content using Vision Model
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite-preview-09-2025" });
+                // 4. Generate Content using Vision Model
+                const model = genAI.getGenerativeModel({
+                        model: "gemini-2.5-flash-lite-preview-09-2025",
+                        generationConfig: {
+                                temperature: 0.5,
+                                maxOutputTokens: 900,
+                                responseMimeType: "application/json",
+                        },
+                });
         
-        const result = await model.generateContent([
-            {
-                fileData: {
-                    mimeType: uploadResponse.file.mimeType,
-                    fileUri: uploadResponse.file.uri
-                }
-            },
-            { text: `
-                You are a Personal Branding Consultant for Tech Professionals.
-                Analyze this LinkedIn profile screenshot strictly on visual and content hierarchy.
+                const result = await model.generateContent([
+                        {
+                                fileData: {
+                                        mimeType: uploadResponse.file.mimeType,
+                                        fileUri: uploadResponse.file.uri
+                                }
+                        },
+                        { text: `
+                                You are a Personal Branding Consultant for Tech Professionals.
+                                Analyze this LinkedIn profile screenshot with special focus on the profile photo quality.
+                                Be concise, constructive, and avoid any praise in the critique. If the profile is strong, still give 2 short nits.
 
-                **Evaluation Criteria:**
-                1. **Headshot:** Is it high-quality? Professional lighting? (Pass/Fail)
-                2. **Banner:** Is it default/blank? Does it showcase skills/code?
-                3. **Headline:** Is it generic (e.g., "Student at XYZ")? It should be value-driven (e.g., "Full Stack Dev | Building Scalable Apps").
-
-                **Return strictly JSON:**
-                {
-                    "visual_score": 75,
-                    "critique": "Banner is wasted space. It's just a generic color.",
-                    "headline_suggestion": "Change 'Student' to 'Aspiring Software Engineer | React & Node.js Specialist'",
-                    "action_items": ["Upload a custom banner", "Zoom in on profile photo", "Add 'Open to Work' frame"]
-                }
-            `}
-        ]);
+                                Output STRICT JSON only (no prose). Hard limits: keep each string under 120 characters.
+                                {
+                                    "visual_score": 78,
+                                    "critique": "List 2-4 specific issues separated by | . No compliments.",
+                                    "headline_suggestion": "Improved headline under 90 chars",
+                                    "action_items": ["3-5 punchy fixes"],
+                                    "photo_report": {
+                                        "strengths": ["short strengths"],
+                                        "issues": ["short issues"],
+                                        "suggestions": ["short fixes"],
+                                        "quality_score": 0-100,
+                                        "helpful_data": {
+                                            "background": "clean/busy/needs blur",
+                                            "lighting": "good/harsh/dim",
+                                            "framing": "tight/loose/awkward crop",
+                                            "attire": "appropriate/upgrade",
+                                            "expression": "friendly/neutral/serious"
+                                        }
+                                    }
+                                }
+                        `}
+                ]);
 
         // 5. Parse Response
         const responseText = result.response.text();

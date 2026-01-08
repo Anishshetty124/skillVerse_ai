@@ -21,6 +21,13 @@ const useStore = create(
       roadmapData: null,
       setRoadmapData: (data) => set({ roadmapData: data }),
 
+      // Resume audit and tailoring persisted results
+      auditResult: null,
+      setAuditResult: (data) => set({ auditResult: data }),
+
+      tailorResult: null,
+      setTailorResult: (data) => set({ tailorResult: data }),
+
       linkedinData: null,
       setLinkedinData: (data) => set({ linkedinData: data }),
 
@@ -59,6 +66,8 @@ const useStore = create(
         roadmapData: state.roadmapData,
         linkedinData: state.linkedinData,
         resumeData: state.resumeData,
+        auditResult: state.auditResult,
+        tailorResult: state.tailorResult,
         authUser: state.authUser,
         authToken: state.authToken,
       }),

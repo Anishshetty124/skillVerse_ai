@@ -2,7 +2,10 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import { OAuth2Client } from 'google-auth-library';
-import PDFParse from 'pdf-parse';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const PDFParse = require('pdf-parse');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-this';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
@@ -194,18 +197,22 @@ export const uploadResume = async (req, res, next) => {
 export const getResume = async (req, res, next) => {
   try {
     const userId = req.user._id;
-    const user = await User.findById(userId).select('resume');
+    const user = await User.findById(userId).select('resume').lean();
 
-    if (!user || !user.resume.hasResume) {
-      return res.status(404).json({ message: 'No resume found.' });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
     }
 
+    const resume = user.resume || {};
+    const hasResume = Boolean(resume.hasResume);
+
+    // Return a stable payload even when the user has no resume yet
     return res.status(200).json({
       resume: {
-        hasResume: user.resume.hasResume,
-        filename: user.resume.filename,
-        uploadedAt: user.resume.uploadedAt,
-        extractedText: user.resume.extractedText,
+        hasResume,
+        filename: resume.filename || null,
+        uploadedAt: resume.uploadedAt || null,
+        extractedText: resume.extractedText || '',
       },
     });
   } catch (err) {

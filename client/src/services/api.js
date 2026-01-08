@@ -53,6 +53,12 @@ export const api = {
      */
     generateRoadmap: (skill, currentLevel = 'Beginner') => apiClient.post('/roadmap', { skill, currentLevel }),
 
+    /**
+     * Learning resources (YouTube)
+     * @param {string} skill
+     */
+    getLearningResources: (skill) => apiClient.get('/resources', { params: { skill } }),
+
     // --- AUTH ---
     signUp: (name, email, password) => apiClient.post('/auth/signup', { name, email, password }),
     signIn: (email, password) => apiClient.post('/auth/signin', { email, password }),
@@ -60,4 +66,19 @@ export const api = {
     googleAuth: (credential) => apiClient.post('/auth/google', { credential }),
     uploadResume: (formData) => apiClient.post('/auth/upload-resume', formData),
     getResume: () => apiClient.get('/auth/resume'),
+    // alias to avoid breaking older calls
+    getSavedResume: () => apiClient.get('/auth/resume'),
+
+    // Resume utilities (protected)
+    parseResume: (formData) => apiClient.post('/resume/parse', formData),
+    auditResumeText: (resumeText) => apiClient.post('/resume/audit-text', { resumeText }),
+    tailorResume: (resumeText, jobDescription) =>
+        apiClient.post('/resume/tailor', { existingResumeText: resumeText, jobDescription }),
+
+    /**
+     * Resume Roaster
+     * @param {string} resumeText
+     * @param {('Mild'|'Medium'|'Spicy')} roastLevel
+     */
+    roastResume: (resumeText, roastLevel = 'Mild') => apiClient.post('/resume/roast', { resumeText, roastLevel }),
 };

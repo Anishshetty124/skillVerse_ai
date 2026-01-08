@@ -23,35 +23,34 @@ const ResumeCombined = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
-      <div className="sticky top-16 sm:top-20 z-20 bg-[#0f172a]/90 backdrop-blur-md rounded-2xl border border-white/5 shadow-lg shadow-indigo-500/10 px-3 sm:px-4 py-3 sm:py-4 mb-6 sm:mb-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`relative flex items-center gap-2 sm:gap-2.5 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl font-semibold text-sm sm:text-base transition-all border border-white/10 ${
-                  activeTab === tab.id
-                    ? 'text-white' 
-                    : 'text-gray-400 hover:text-white hover:border-white/20'
-                }`}
-              >
-                <tab.icon size={18} className="text-indigo-300" />
-                <div className="text-left">
-                  <p className="leading-tight">{tab.label}</p>
-                  <p className="text-[11px] sm:text-xs text-gray-500 hidden sm:block">{tab.blurb}</p>
-                </div>
-                {activeTab === tab.id && (
-                  <motion.span
-                    layoutId="tabGlow"
-                    transition={tabSpring}
-                    className="absolute inset-0 -z-10 rounded-xl bg-gradient-to-r from-indigo-500/40 via-purple-500/30 to-pink-500/30 blur-sm"
-                  />
-                )}
-              </button>
-            ))}
-          </div>
+    <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      {/* Compact header with both tabs inline */}
+      <div className="sticky top-16 sm:top-20 z-20 bg-[#0f172a]/95 backdrop-blur-md rounded-xl border border-white/10 shadow-lg px-3 sm:px-4 py-3 mb-4 sm:mb-6">
+        <div className="flex flex-wrap items-center gap-2">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`relative flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm transition-all ${
+                activeTab === tab.id
+                  ? 'text-white bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-400/50' 
+                  : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'
+              }`}
+            >
+              <tab.icon size={16} className={activeTab === tab.id ? 'text-indigo-400' : 'text-gray-500'} />
+              <div className="text-left">
+                <p className="leading-tight">{tab.label}</p>
+                <p className="text-[10px] text-gray-500 hidden sm:block">{tab.blurb}</p>
+              </div>
+              {activeTab === tab.id && (
+                <motion.span
+                  layoutId="tabGlow"
+                  transition={tabSpring}
+                  className="absolute inset-0 -z-10 rounded-lg bg-gradient-to-r from-indigo-500/10 to-purple-500/10"
+                />
+              )}
+            </button>
+          ))}
         </div>
       </div>
 

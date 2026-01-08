@@ -10,7 +10,8 @@ import { analyzeGithub, uploadResumeFile, upload } from '../controllers/githubCo
 import { analyzeResume } from '../controllers/atsController.js';
 import { analyzeLinkedin } from '../controllers/linkedinController.js';
 import { generateRoadmap } from '../controllers/roadmapController.js';
-import { auditResume, auditResumeText, tailorResume } from '../controllers/resumeController.js';
+import { getLearningResources } from '../controllers/resourceController.js';
+import { auditResume, auditResumeText, tailorResume, parseResume, roastResume } from '../controllers/resumeController.js';
 import gridfsUpload from '../middleware/upload.js';
 import { requireAuth } from '../middleware/authMiddleware.js';
 
@@ -61,13 +62,22 @@ router.post('/linkedin', diskStorage.single('screenshot'), analyzeLinkedin);
 // 4. Career Roadmap
 router.post('/roadmap', generateRoadmap);
 
+// 4b. Learning resources (YouTube)
+router.get('/resources', getLearningResources);
+
 // 5. Resume Audit (Career Strategist) - Use GridFS Storage for MongoDB (Protected)
 router.post('/resume/audit', requireAuth, gridfsUpload.single('resume'), auditResume);
 
 // 5b. Resume Audit from Text (no file upload) (Protected)
 router.post('/resume/audit-text', requireAuth, auditResumeText);
 
+// 5c. Resume parse-only (no AI) (Protected)
+router.post('/resume/parse', requireAuth, ramStorage.single('resume'), parseResume);
+
 // 6. Resume Tailor (Job Assassin) (Protected)
 router.post('/resume/tailor', requireAuth, tailorResume);
+
+// 7. Resume Roaster (Protected)
+router.post('/resume/roast', requireAuth, roastResume);
 
 export default router;

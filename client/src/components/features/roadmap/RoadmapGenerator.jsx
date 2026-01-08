@@ -1,18 +1,30 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useRoadmap } from '../../../hooks/useRoadmap';
 import useStore from '../../../store/useStore';
 import { GlassCard } from '../../ui/GlassCard';
 import { GradientButton } from '../../ui/GradientButton';
 import { CountUp } from '../../ui/Animations';
-import { Map, ArrowRight, Rocket, BookOpen, CheckCircle2, AlertCircle, Clock, Target, Zap, X } from 'lucide-react';
+import { api } from '../../../services/api';
+import { Map, ArrowRight, Rocket, BookOpen, CheckCircle2, AlertCircle, Clock, Target, Zap, X, Youtube } from 'lucide-react';
 
 const RoadmapGenerator = () => {
+    const location = useLocation();
     const [skill, setSkill] = useState('');
     const [level, setLevel] = useState('Beginner');
     const [clientError, setClientError] = useState('');
+    const [resources, setResources] = useState([]);
+    const [loadingResources, setLoadingResources] = useState(false);
+    const [resourceError, setResourceError] = useState('');
     const { generate, loading, error } = useRoadmap();
     const roadmapData = useStore((s) => s.roadmapData);
     const setRoadmapData = useStore((s) => s.setRoadmapData);
+
+    useEffect(() => {
+        if (location.state?.skill) {
+            setSkill(location.state.skill);
+        }
+    }, [location.state]);
 
     const stats = useMemo(() => {
         if (!roadmapData?.length) return null;
@@ -67,7 +79,29 @@ const RoadmapGenerator = () => {
     const handleClear = () => {
         setRoadmapData(null);
         setClientError('');
+        setResources([]);
+        setResourceError('');
     };
+
+    const fetchResources = async (query) => {
+        setLoadingResources(true);
+        setResourceError('');
+        try {
+            const res = await api.getLearningResources(query);
+            setResources(res.data?.data?.videos || []);
+        } catch (err) {
+            const msg = err.response?.data?.error?.message || err.message || 'Could not fetch resources.';
+            setResourceError(msg);
+        } finally {
+            setLoadingResources(false);
+        }
+    };
+
+    useEffect(() => {
+        if (roadmapData && skill) {
+            fetchResources(skill);
+        }
+    }, [roadmapData, skill]);
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
@@ -171,6 +205,50 @@ const RoadmapGenerator = () => {
                             </GlassCard>
                         ))}
                     </div>
+                )}
+
+                {(loadingResources || resources.length > 0 || resourceError) && (
+                    <GlassCard className="bg-white/5 border-white/10 p-5 sm:p-6">
+                        <div className="flex items-center gap-2 mb-3">
+                            <Youtube className="text-red-400" size={18} />
+                            <h3 className="text-lg sm:text-xl font-semibold text-white">Top YouTube resources</h3>
+                        </div>
+                        <p className="text-sm text-gray-400 mb-4">Learn the selected skill with curated videos and channels.</p>
+
+                        {loadingResources && (
+                            <p className="text-sm text-gray-300">Fetching fresh links...</p>
+                        )}
+
+                        {resourceError && (
+                            <div className="text-sm text-red-300 mb-3">{resourceError}</div>
+                        )}
+
+                        {!loadingResources && !resourceError && resources.length > 0 && (
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                {resources.map((video, idx) => (
+                                    <a
+                                        key={idx}
+                                        href={video.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex gap-3 p-3 rounded-lg bg-white/5 border border-white/10 hover:border-red-300/40 hover:bg-white/10 transition-colors"
+                                    >
+                                        <div className="w-20 h-12 flex-shrink-0 bg-slate-800 rounded overflow-hidden">
+                                            {video.thumbnail ? (
+                                                <img src={video.thumbnail} alt={video.title} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-red-300 text-xs">YT</div>
+                                            )}
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="text-sm font-semibold text-white leading-snug line-clamp-2">{video.title}</p>
+                                            <p className="text-xs text-gray-400 mt-1">{video.channel}</p>
+                                        </div>
+                                    </a>
+                                ))}
+                            </div>
+                        )}
+                    </GlassCard>
                 )}
 
                 {roadmapData && roadmapData.length > 0 ? (

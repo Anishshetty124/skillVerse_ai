@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 // eslint-disable-next-line no-unused-vars
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -14,22 +14,45 @@ import ResumeTailor from './components/features/resume/ResumeTailor';
 import ResumeCombined from './components/features/resume/ResumeCombined';
 
 // Icons
-import { Github, FileText, Map, Linkedin, Terminal, Menu, X, Briefcase, Target, User } from 'lucide-react';
+import { Github, FileText, Map, Linkedin, Terminal, Menu, X, Briefcase, Target, User, Compass } from 'lucide-react';
 import SignIn from './components/features/auth/SignIn';
 import SignUp from './components/features/auth/SignUp';
 import useStore from './store/useStore';
+import { api } from './services/api';
 
 const App = () => {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const authUser = useStore((s) => s.authUser);
     const logout = useStore((s) => s.logout);
+    const resumeData = useStore((s) => s.resumeData);
+    const setResumeData = useStore((s) => s.setResumeData);
+
+    // Fetch saved resume once after login so all pages can reuse it
+    useEffect(() => {
+        const fetchResume = async () => {
+            try {
+                const { data } = await api.getResume();
+                const resume = data?.resume;
+                if (resume?.hasResume && resume.extractedText) {
+                    setResumeData({ type: 'text', text: resume.extractedText, filename: resume.filename });
+                }
+            } catch (err) {
+                // silent fail to avoid blocking UI
+                console.warn('Resume prefetch failed', err.message);
+            }
+        };
+
+        if (authUser && !resumeData) {
+            fetchResume();
+        }
+    }, [authUser, resumeData, setResumeData]);
 
     const navLinks = [
         { path: '/resume-combined', label: 'Resume Tailor', icon: <FileText size={18}/> },
         { path: '/roadmap', label: 'Career Roadmap', icon: <Map size={18}/> },
-        { path: '/linkedin', label: 'Brand Vision', icon: <Linkedin size={18}/> },
-        { path: '/github', label: 'github analysis', icon: <Github size={18}/> },
+        { path: '/linkedin', label: 'Explore', icon: <Compass size={18}/> },
+        { path: '/github', label: 'Github Analysis', icon: <Github size={18}/> },
     ];
 
   return (
@@ -181,19 +204,29 @@ const App = () => {
 
                 {/* 2. Feature Pages */}
                 <Route path="/ats" element={
-                    <PageWrapper><AtsScanner /></PageWrapper>
+                    <ProtectedRoute>
+                        <PageWrapper><AtsScanner /></PageWrapper>
+                    </ProtectedRoute>
                 }/>
                 <Route path="/resume-combined" element={
-                    <PageWrapper><ResumeCombined /></PageWrapper>
+                    <ProtectedRoute>
+                        <PageWrapper><ResumeCombined /></PageWrapper>
+                    </ProtectedRoute>
                 }/>
                 <Route path="/roadmap" element={
-                    <PageWrapper><RoadmapGenerator /></PageWrapper>
+                    <ProtectedRoute>
+                        <PageWrapper><RoadmapGenerator /></PageWrapper>
+                    </ProtectedRoute>
                 }/>
                 <Route path="/linkedin" element={
-                    <PageWrapper><LinkedinScanner /></PageWrapper>
+                    <ProtectedRoute>
+                        <PageWrapper><LinkedinScanner /></PageWrapper>
+                    </ProtectedRoute>
                 }/>
                 <Route path="/github" element={
-                    <PageWrapper><GithubScanner /></PageWrapper>
+                    <ProtectedRoute>
+                        <PageWrapper><GithubScanner /></PageWrapper>
+                    </ProtectedRoute>
                 }/>
 
                 {/* Auth */}
@@ -219,5 +252,17 @@ const PageWrapper = ({ children }) => (
         {children}
     </motion.div>
 );
+
+// Simple auth gate: redirects unauthenticated users to sign-in and preserves the intended path.
+const ProtectedRoute = ({ children }) => {
+    const authUser = useStore((s) => s.authUser);
+    const location = useLocation();
+
+    if (!authUser) {
+        return <Navigate to="/signin" replace state={{ from: location.pathname }} />;
+    }
+
+    return children;
+};
 
 export default App;

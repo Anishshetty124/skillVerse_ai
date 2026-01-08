@@ -58,6 +58,55 @@ const isValidResume = (text) => {
     return true;
 };
 
+// Lightweight parser: extract text only (PDF/DOCX) without AI
+export const parseResume = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: "No file uploaded" });
+        }
+
+        const { originalname = "" } = req.file;
+        const buffer = req.file.buffer;
+
+        if (!buffer || !buffer.length) {
+            return res.status(400).json({ error: "File upload failed - no data received" });
+        }
+
+        let extractedText = "";
+
+        try {
+            if (originalname.toLowerCase().endsWith(".pdf")) {
+                const parser = new PDFParse({ data: buffer });
+                await parser.load();
+                const text = await parser.getText();
+                extractedText = text?.text || "";
+            } else if (originalname.toLowerCase().endsWith(".docx")) {
+                const result = await mammoth.extractRawText({ buffer });
+                extractedText = result?.value || "";
+            } else {
+                return res.status(400).json({ error: "Please upload a PDF or DOCX file" });
+            }
+        } catch (parseErr) {
+            console.error("parseResume extraction error", parseErr);
+            return res.status(400).json({ error: "Failed to parse file. Please use a valid PDF or DOCX." });
+        }
+
+        if (!extractedText.trim()) {
+            return res.status(400).json({ error: "File appears to be empty or unreadable." });
+        }
+
+        return res.json({
+            success: true,
+            extractedText,
+            filename: originalname,
+            size: buffer.length,
+        });
+    } catch (error) {
+        console.error("parseResume error", error);
+        return res.status(500).json({ error: "Unable to parse resume at this time." });
+    }
+};
+
 // --- PAGE 1: The "Career Strategist" (General Audit) ---
 export const auditResume = async (req, res) => {
     try {
@@ -83,8 +132,7 @@ export const auditResume = async (req, res) => {
                 const parser = new PDFParse({ data: buffer });
                 await parser.load();
                 const text = await parser.getText();
-                // getText() returns an array of text objects, join them
-                resumeText = Array.isArray(text) ? text.map(t => t.text || t).join(' ') : (text?.text || text || "");
+                resumeText = text?.text || "";
             } else if (req.file.originalname.endsWith('.docx')) {
                 const result = await mammoth.extractRawText({ buffer });
                 resumeText = result.value || "";
@@ -158,12 +206,55 @@ export const auditResume = async (req, res) => {
                         "applyOn": ["LinkedIn", "Glassdoor", "Indeed"]
                     }
                 ],
-                "improvements": ["Add metrics", "Link GitHub", "Add certifications"],
                 "detectedSkills": {
-                    "technical": ["React", "Node.js"],
-                    "soft": ["Problem Solving", "Communication"]
+                    "technical": ["React", "Node.js", "MongoDB", "Express"],
+                    "soft": ["Problem Solving", "Communication", "Team Collaboration"]
+                },
+                "skillGaps": {
+                    "critical": ["Docker", "Kubernetes", "CI/CD"],
+                    "recommended": ["TypeScript", "GraphQL", "Redis"],
+                    "niceToHave": ["AWS", "System Design", "Microservices"]
+                },
+                "recommendedSkillsToLearn": [
+                    {"skill": "Docker", "priority": "High", "reason": "Essential for modern deployment"},
+                    {"skill": "TypeScript", "priority": "Medium", "reason": "Industry standard for large projects"},
+                    {"skill": "System Design", "priority": "Medium", "reason": "Required for senior positions"}
+                ],
+                "strengths": [
+                    "Strong foundation in MERN stack development",
+                    "Good project portfolio with real-world applications",
+                    "Clear communication of technical concepts"
+                ],
+                "weaknesses": [
+                    "Limited experience with cloud platforms",
+                    "No mention of testing frameworks",
+                    "Missing quantifiable metrics in achievements"
+                ],
+                "actionableInsights": [
+                    "Add quantifiable metrics to your project descriptions (e.g., 'Improved load time by 40%')",
+                    "Include more keywords related to cloud technologies and DevOps",
+                    "Add a dedicated 'Certifications' section if you have any"
+                ],
+                "careerProgression": {
+                    "currentLevel": "Junior Developer",
+                    "nextLevel": "Mid-Level Developer",
+                    "timeframe": "12-18 months",
+                    "keyMilestones": [
+                        "Master Docker and containerization",
+                        "Build 2-3 production-grade full-stack projects",
+                        "Contribute to open-source projects"
+                    ]
                 }
             }
+
+            IMPORTANT GUIDELINES:
+            - atsScore: 0-100 (aim for 70-90 for complete resumes)
+            - aiSpeakScore: 0-100 (0=human, 100=AI-generated)
+            - If aiSpeakScore > 70, set aiDetectionWarning
+            - recommendedSkillsToLearn: List 5-8 skills with priority (High/Medium/Low)
+            - skillGaps: Categorize missing skills by urgency
+            - Provide 3-5 strengths and 3-5 weaknesses
+            - actionableInsights: Give 4-6 specific, actionable improvements
         `;
 
         try {
@@ -324,6 +415,102 @@ export const auditResumeText = async (req, res) => {
         res.status(500).json({ 
             error: `Resume analysis failed: ${error.message}. Please try again or contact support.` 
         });
+    }
+};
+
+// --- Resume Roaster (playful, safe) ---
+export const roastResume = async (req, res) => {
+    try {
+        const { resumeText = "", roastLevel = "Mild" } = req.body;
+        const trimmed = (resumeText || "").trim();
+
+        if (!isValidResume(trimmed)) {
+            return res.status(400).json({ success: false, error: { message: "Please provide a valid resume text (at least 100 chars with experience/skills/education)." } });
+        }
+
+        const level = ["Mild", "Medium", "Spicy"].includes(roastLevel) ? roastLevel : "Mild";
+        const temp = level === "Spicy" ? 1.3 : level === "Medium" ? 0.95 : 0.8;
+        const apiKeys = getApiKeys();
+        if (!apiKeys.length) {
+            return res.status(500).json({ success: false, error: { message: "API key not configured." } });
+        }
+
+        const prompt = `You are a brutally honest career coach. Plain talk, no fluff, no AI disclaimers.
+Roast level ${level}:
+- Mild: gentle nudges, 1-2 friendly jabs, supportive.
+- Medium: direct criticism, 3-4 pointed jabs, no sugar-coating.
+- Spicy: SAVAGE. Tear it apart. 5-7 brutal roasts. No mercy. Make them rethink their life choices. Hit where it hurts - weak bullet points, generic fluff, missing skills, lazy formatting. Be ruthless.
+Rules: never attack age/gender/race/background. Roast the WORK, not the person. Keep it career-focused. Short punches under 100 chars.
+
+Return STRICT JSON only:
+{
+    "roast_level": "${level}",
+    "one_liner": "punchy opener",
+    "playful_roast": ["short jab 1", "short jab 2"],
+    "strengths": ["what works"],
+    "gaps": ["what's missing"],
+    "actionable_improvements": ["specific, doable edits"],
+    "warnings": ["keep empty if none"]
+}
+
+Resume:
+${trimmed}
+`;
+
+        let lastError = null;
+        for (const apiKey of apiKeys) {
+            try {
+                const genAI = new GoogleGenerativeAI(apiKey);
+                const model = genAI.getGenerativeModel({ 
+                    model: "gemini-2.5-flash-lite-preview-09-2025",
+                    generationConfig: {
+                        temperature: temp,
+                        maxOutputTokens: 800,
+                        responseMimeType: "application/json",
+                    },
+                });
+
+                const result = await model.generateContent(prompt);
+                const raw = result.response.text();
+                
+                console.log("[Roast] Raw response:", raw.substring(0, 200));
+                
+                const cleaned = cleanJSON(raw);
+                let data;
+                
+                try {
+                    data = JSON.parse(cleaned);
+                } catch (parseError) {
+                    console.error("[Roast] JSON parse failed:", parseError.message);
+                    console.error("[Roast] Cleaned text:", cleaned.substring(0, 300));
+                    
+                    // Fallback: extract JSON from partial response
+                    const match = cleaned.match(/\{[\s\S]*\}/);
+                    if (match) {
+                        try {
+                            data = JSON.parse(match[0]);
+                        } catch (e) {
+                            throw new Error("AI response was incomplete. Please try again with a shorter resume or different level.");
+                        }
+                    } else {
+                        throw new Error("AI did not return valid JSON. Please try again.");
+                    }
+                }
+
+                return res.status(200).json({ success: true, data });
+            } catch (keyError) {
+                console.log(`[Roast] API key failed: ${keyError.message.substring(0, 100)}`);
+                lastError = keyError;
+                continue;
+            }
+        }
+
+        // All keys failed
+        throw lastError || new Error("All API keys exhausted");
+
+    } catch (error) {
+        console.error("roastResume error", error.message);
+        return res.status(500).json({ success: false, error: { message: error.message || "Unable to roast resume right now." } });
     }
 };
 

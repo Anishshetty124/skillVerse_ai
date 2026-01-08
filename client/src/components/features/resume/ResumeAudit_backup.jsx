@@ -3,19 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import useStore from '../../../store/useStore';
 import { GlassCard } from '../../ui/GlassCard';
 import { GradientButton } from '../../ui/GradientButton';
-import { FileText, AlertTriangle, Check, Sparkles, UploadCloud, ChevronRight } from 'lucide-react';
+import { Briefcase, AlertTriangle, CheckCircle, Cpu, UploadCloud, ExternalLink, Eye, AlertOctagon, Zap, TrendingUp, XCircle, Target, Award } from 'lucide-react';
 import { api } from '../../../services/api';
 
-const ResumeTailor = () => {
-    const navigate = useNavigate();
-    const { resumeData, setResumeData, authUser, tailorResult, setTailorResult } = useStore();
-    const [jobDescription, setJobDescription] = useState("");
+const ResumeAudit = () => {
+    const { resumeData, setResumeData, authUser } = useStore();
     const [file, setFile] = useState(null);
     const [manualText, setManualText] = useState("");
-    const [result, setResult] = useState(tailorResult);
+    const [result, setResult] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-    const [uploadMode, setUploadMode] = useState("file"); // "file", "paste", or "saved"
+    const [uploadMode, setUploadMode] = useState("file"); // "file", "text", "paste", or "saved"
     const [savedResume, setSavedResume] = useState(null);
     const [loadingResume, setLoadingResume] = useState(false);
 
@@ -25,7 +23,6 @@ const ResumeTailor = () => {
             return;
         }
 
-        // If we already have it, just switch modes without hitting the API again
         if (savedResume) {
             setUploadMode("saved");
             return;
@@ -67,12 +64,7 @@ const ResumeTailor = () => {
         }
     };
 
-    const handleTailor = async () => {
-        if (!jobDescription.trim()) {
-            setError("Please enter a job description");
-            return;
-        }
-
+    const handleAnalyze = async () => {
         setLoading(true);
         setError("");
         setResult(null);
@@ -106,14 +98,13 @@ const ResumeTailor = () => {
                 resumeText = savedResume.extractedText;
             }
 
-            const { data } = await api.tailorResume(resumeText, jobDescription);
-
+            const { data } = await api.auditResumeText(resumeText);
+            console.log("Response:", data);
             setResult(data.data);
-            setTailorResult(data.data);
             setResumeData({ type: 'text', text: resumeText });
         } catch (err) {
-            console.error("Tailor error:", err.response?.data || err.message);
-            const errorMessage = err.response?.data?.error || err.message || "Failed to tailor resume. Please try again.";
+            console.error("Analysis error:", err.response?.data || err.message);
+            const errorMessage = err.response?.data?.error || err.message || "Failed to analyze resume. Please try again.";
             setError(errorMessage);
         } finally {
             setLoading(false);
@@ -122,11 +113,11 @@ const ResumeTailor = () => {
 
     return (
         <div className="space-y-6">
-            {/* Compact Resume Mode Selection + Upload */}
+            {/* Compact Resume Mode Selection + Upload in one card */}
             <GlassCard className="p-6 sm:p-8">
                 <h2 className="text-lg sm:text-xl font-semibold mb-3 text-white">Select Resume Source</h2>
                 
-                {/* Horizontal tabs */}
+                {/* Horizontal tabs for desktop, vertical for mobile */}
                 <div className="flex flex-wrap gap-2 mb-4">
                     <button
                         onClick={() => handleSelectUploadMode("file")}
@@ -164,8 +155,8 @@ const ResumeTailor = () => {
                     </button>
                 </div>
 
-                {/* Resume Content */}
-                <div className="mb-4">
+                {/* Content based on mode */}
+                <div className="mt-4">
                     {uploadMode === "file" && (
                         <label className="block">
                             <div className="relative flex items-center justify-center w-full p-6 sm:p-8 border-2 border-dashed border-gray-500 rounded-lg hover:border-blue-400 transition cursor-pointer bg-slate-900/50">
@@ -184,7 +175,7 @@ const ResumeTailor = () => {
                             value={manualText} 
                             onChange={(e) => setManualText(e.target.value)} 
                             placeholder="Paste your resume text here..." 
-                            className="w-full h-32 sm:h-40 p-4 bg-slate-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:border-blue-400 focus:outline-none text-sm"
+                            className="w-full h-40 sm:h-48 p-4 bg-slate-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:border-blue-400 focus:outline-none text-sm"
                         />
                     )}
 
@@ -200,17 +191,6 @@ const ResumeTailor = () => {
                     )}
                 </div>
 
-                {/* Job Description in same card */}
-                <div className="mt-6 pt-6 border-t border-white/10">
-                    <h2 className="text-lg sm:text-xl font-semibold mb-3 text-white">Job Description</h2>
-                    <textarea
-                        value={jobDescription}
-                        onChange={(e) => setJobDescription(e.target.value)}
-                        placeholder="Paste the job description you want to tailor your resume for..."
-                        className="w-full h-32 sm:h-40 p-4 bg-slate-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:border-blue-400 focus:outline-none text-sm"
-                    />
-                </div>
-
                 {error && (
                     <div className="mt-4 p-3 border border-red-500/50 bg-red-500/10 rounded-lg">
                         <div className="flex items-start">
@@ -220,71 +200,59 @@ const ResumeTailor = () => {
                     </div>
                 )}
 
-                <GradientButton onClick={handleTailor} disabled={loading} className="w-full mt-4">
-                    {loading ? "Tailoring..." : "Tailor Resume"}
+                <GradientButton onClick={handleAnalyze} disabled={loading} className="w-full mt-4">
+                    {loading ? "Analyzing..." : "Analyze Resume"}
                 </GradientButton>
-
-                {result && (
-                    <button
-                        onClick={() => { setResult(null); setTailorResult(null); }}
-                        className="w-full mt-2 px-4 py-2 rounded-lg border border-white/20 text-sm font-semibold text-gray-200 hover:bg-white/5 transition-colors"
-                    >
-                        Clear last result
-                    </button>
-                )}
             </GlassCard>
 
             {result && (
                 <div className="space-y-4">
                     <GlassCard className="p-6 sm:p-8">
                         <h2 className="text-xl sm:text-2xl font-bold text-white mb-4 sm:mb-6 flex items-center">
-                            <Sparkles className="mr-2 text-blue-400" /> Tailoring Analysis
+                            <Cpu className="mr-2 text-blue-400" /> ATS Compatibility Score
                         </h2>
 
-                        {result.matchScore && (
-                            <div className="mb-6 sm:mb-8 p-4 sm:p-6 bg-slate-900/50 rounded-lg border border-blue-500/50">
-                                <div className="text-xs sm:text-sm text-gray-400 mb-2">Job Match Score</div>
-                                <div className="text-4xl sm:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600 mb-2">
-                                    {result.matchScore}%
-                                </div>
-                                <div className="w-full bg-gray-700 rounded-full h-2">
-                                    <div className="bg-gradient-to-r from-blue-400 to-purple-600 h-2 rounded-full" style={{ width: `${result.matchScore}%` }}></div>
-                                </div>
-                                {result.hiringVerdict && (
-                                    <p className="text-gray-300 text-sm sm:text-base mt-3">{result.hiringVerdict}: {result.verdict_explanation}</p>
-                                )}
+                        <div className="mb-6 sm:mb-8 p-4 sm:p-6 bg-slate-900/50 rounded-lg border border-blue-500/50">
+                            <div className="text-4xl sm:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600 mb-2">
+                                {result.atsScore}%
                             </div>
-                        )}
+                            <div className="w-full bg-gray-700 rounded-full h-2 mb-3 sm:mb-4">
+                                <div className="bg-gradient-to-r from-blue-400 to-purple-600 h-2 rounded-full" style={{ width: `${result.atsScore}%` }}></div>
+                            </div>
+                            <p className="text-gray-300 text-sm sm:text-base">{result.profileSummary}</p>
+                            {result.experienceLevel && (
+                                <p className="text-gray-400 mt-2 text-xs sm:text-sm">Experience Level: {result.experienceLevel}</p>
+                            )}
+                            {result.detectedRole && (
+                                <p className="text-gray-400 text-xs sm:text-sm">Detected Role: {result.detectedRole}</p>
+                            )}
+                        </div>
 
-                        {result.keywordGapMatrix && (
+                        {result.detectedSkills && (
                             <div className="mb-6 sm:mb-8">
-                                <h3 className="text-lg sm:text-xl font-semibold text-blue-400 mb-3 sm:mb-4">Keyword Analysis</h3>
-                                
-                                {result.keywordGapMatrix.matched && result.keywordGapMatrix.matched.length > 0 && (
+                                <h3 className="text-lg sm:text-xl font-semibold text-green-400 mb-3 sm:mb-4 flex items-center">
+                                    <CheckCircle className="mr-2" size={20} /> Detected Skills
+                                </h3>
+                                {result.detectedSkills.technical && result.detectedSkills.technical.length > 0 && (
                                     <div className="mb-3">
-                                        <p className="text-xs sm:text-sm text-gray-400 mb-2">✓ Matched Keywords:</p>
+                                        <p className="text-xs sm:text-sm text-gray-400 mb-2">Technical:</p>
                                         <div className="flex flex-wrap gap-2">
-                                            {result.keywordGapMatrix.matched.map((keyword, idx) => (
+                                            {result.detectedSkills.technical.map((skill, idx) => (
                                                 <span key={idx} className="px-2 sm:px-3 py-1 bg-green-500/10 border border-green-500/30 rounded-full text-green-300 text-xs sm:text-sm">
-                                                    {keyword}
+                                                    {skill}
                                                 </span>
                                             ))}
                                         </div>
                                     </div>
                                 )}
-                                
-                                {result.keywordGapMatrix.missing && result.keywordGapMatrix.missing.length > 0 && (
-                                    <div className="mb-3">
-                                        <p className="text-xs sm:text-sm text-gray-400 mb-2">✗ Missing Keywords:</p>
+                                {result.detectedSkills.soft && result.detectedSkills.soft.length > 0 && (
+                                    <div>
+                                        <p className="text-xs sm:text-sm text-gray-400 mb-2">Soft Skills:</p>
                                         <div className="flex flex-wrap gap-2">
-                                            {result.keywordGapMatrix.missing.map((keyword, idx) => (
-                                                <button
-                                                    key={idx}
-                                                    onClick={() => navigate('/roadmap', { state: { skill: keyword } })}
-                                                    className="px-2 sm:px-3 py-1 bg-red-500/10 border border-red-500/30 rounded-full text-red-300 text-xs sm:text-sm hover:bg-red-500/20 hover:border-red-400/50 transition-colors cursor-pointer"
-                                                >
-                                                    {keyword}
-                                                </button>
+                                            {result.detectedSkills.soft.map((skill, idx) => (
+                                                <span key={idx} className="px-2 sm:px-3 py-1 bg-blue-500/10 border border-blue-500/30 rounded-full text-blue-300 text-xs sm:text-sm">
+                                                    {skill}
+                                                </span>
                                             ))}
                                         </div>
                                     </div>
@@ -292,53 +260,67 @@ const ResumeTailor = () => {
                             </div>
                         )}
 
-                        {result.bulletPointFixes && result.bulletPointFixes.length > 0 && (
+                        {result.actionableInsights && result.actionableInsights.length > 0 && (
                             <div className="mb-6 sm:mb-8">
-                                <h3 className="text-lg sm:text-xl font-semibold text-purple-400 mb-3 sm:mb-4">Bullet Point Improvements</h3>
-                                <div className="space-y-4">
-                                    {result.bulletPointFixes.map((fix, idx) => (
-                                        <div key={idx} className="p-3 sm:p-4 bg-slate-900/50 border border-purple-500/30 rounded-lg">
-                                            <div className="mb-2">
-                                                <p className="text-xs text-gray-400 mb-1">Before:</p>
-                                                <p className="text-red-300 text-sm sm:text-base italic">{fix.original}</p>
-                                            </div>
-                                            <div className="mb-2">
-                                                <p className="text-xs text-gray-400 mb-1">After:</p>
-                                                <p className="text-green-300 text-sm sm:text-base font-medium">{fix.improved}</p>
-                                            </div>
-                                            <p className="text-xs text-gray-400 mt-2">{fix.suggestion}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {result.missingKeywordsSuggestions && result.missingKeywordsSuggestions.length > 0 && (
-                            <div className="mb-6 sm:mb-8">
-                                <h3 className="text-lg sm:text-xl font-semibold text-blue-400 mb-3 sm:mb-4">How to Add Missing Keywords</h3>
+                                <h3 className="text-lg sm:text-xl font-semibold text-blue-400 mb-3 sm:mb-4 flex items-center">
+                                    <Zap className="mr-2" size={20} /> Actionable Insights
+                                </h3>
                                 <ul className="space-y-2">
-                                    {result.missingKeywordsSuggestions.map((item, idx) => (
-                                        <li key={idx} className="text-gray-300 flex items-start text-sm sm:text-base p-3 bg-slate-900/50 rounded-lg border border-blue-500/30">
-                                            <ChevronRight className="text-blue-400 mr-2 flex-shrink-0 mt-0.5" size={16} />
-                                            <div>
-                                                <button
-                                                    onClick={() => navigate('/roadmap', { state: { skill: item.skill } })}
-                                                    className="text-blue-300 font-semibold hover:text-blue-200 transition-colors mr-1"
-                                                >
-                                                    {item.skill}
-                                                </button>
-                                                <span className="text-gray-300">{item.suggestion}</span>
-                                            </div>
+                                    {result.actionableInsights.map((insight, idx) => (
+                                        <li key={idx} className="text-gray-300 flex items-start text-sm sm:text-base">
+                                            <span className="text-blue-400 mr-2 sm:mr-3 flex-shrink-0">→</span>
+                                            {insight}
                                         </li>
                                     ))}
                                 </ul>
                             </div>
                         )}
 
-                        {result.similarRolesAtOtherCompanies && (
-                            <div className="p-3 sm:p-4 bg-indigo-500/10 border border-indigo-500/30 rounded-lg">
-                                <h3 className="text-base sm:text-lg font-semibold text-indigo-300 mb-2">Similar Opportunities</h3>
-                                <p className="text-gray-300 text-xs sm:text-sm">{result.similarRolesAtOtherCompanies}</p>
+                        {result.recommendedJobs && result.recommendedJobs.length > 0 && (
+                            <div>
+                                <h3 className="text-lg sm:text-xl font-semibold text-purple-400 mb-3 sm:mb-4 flex items-center">
+                                    <Briefcase className="mr-2" size={20} /> Recommended Jobs
+                                </h3>
+                                <div className="space-y-3 sm:space-y-4">
+                                    {result.recommendedJobs.map((job, idx) => (
+                                        <div key={idx} className="p-3 sm:p-4 bg-slate-900/50 border border-purple-500/30 rounded-lg">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <h4 className="text-base sm:text-lg font-semibold text-white">{job.role}</h4>
+                                                <span className="text-purple-400 font-bold text-sm sm:text-base">{job.matchConfidence}%</span>
+                                            </div>
+                                            <p className="text-gray-400 text-xs sm:text-sm mb-2">{job.reason}</p>
+                                            {job.avgSalary && (
+                                                <p className="text-green-400 text-xs sm:text-sm mb-2">💰 {job.avgSalary}</p>
+                                            )}
+                                            {job.applyOn && job.applyOn.length > 0 && (
+                                                <div className="flex flex-wrap gap-1 sm:gap-2 mt-2">
+                                                    {job.applyOn.map((platform, pidx) => {
+                                                        const searchQuery = encodeURIComponent(job.role);
+                                                        const platformUrls = {
+                                                            'LinkedIn': `https://www.linkedin.com/jobs/search/?keywords=${searchQuery}`,
+                                                            'Naukri': `https://www.naukri.com/jobs-${searchQuery.toLowerCase().replace(/\s+/g, '-')}`,
+                                                            'Indeed': `https://www.indeed.com/jobs?q=${searchQuery}`,
+                                                            'AngelList': `https://wellfound.com/role/${searchQuery.toLowerCase().replace(/\s+/g, '-')}`,
+                                                            'Instahyre': `https://www.instahyre.com/search-jobs/?q=${searchQuery}`,
+                                                            'Glassdoor': `https://www.glassdoor.com/Job/jobs.htm?sc.keyword=${searchQuery}`
+                                                        };
+                                                        return (
+                                                            <a
+                                                                key={pidx}
+                                                                href={platformUrls[platform] || '#'}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="px-2 py-1 bg-indigo-500/10 border border-indigo-500/30 rounded text-indigo-300 text-xs hover:bg-indigo-500/20 hover:border-indigo-400/50 transition-colors cursor-pointer"
+                                                            >
+                                                                {platform}
+                                                            </a>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         )}
                     </GlassCard>
@@ -348,4 +330,4 @@ const ResumeTailor = () => {
     );
 };
 
-export default ResumeTailor;
+export default ResumeAudit;
