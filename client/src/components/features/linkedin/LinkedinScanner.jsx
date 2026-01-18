@@ -42,6 +42,25 @@ const LinkedinScanner = () => {
 
     return (
         <div className="space-y-6">
+            {/* Explore Skills Button */}
+            <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+                className="flex justify-center mb-4"
+            >
+                <a
+                    href="https://skill4skill.tech"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 rounded-xl text-white font-bold text-sm sm:text-base shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                >
+                    <Sparkles size={20} className="group-hover:rotate-12 transition-transform" />
+                    Explore Skills with Skill4Skill
+                    <span className="text-xs opacity-75">→</span>
+                </a>
+            </motion.div>
+
             <div className="grid lg:grid-cols-2 gap-6 sm:gap-8 animate-fade-in-up">
                 
                 {/* --- LEFT: UPLOAD & PREVIEW --- */}
